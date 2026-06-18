@@ -1,0 +1,19 @@
+import { NextResponse } from "next/server";
+import { processPdfLabel } from "@/lib/pdf/processor";
+
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file");
+    const labelType = formData.get("labelType");
+
+    const result = await processPdfLabel({ file, labelType });
+
+    return NextResponse.json(result);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to convert PDF.";
+
+    return NextResponse.json({ message }, { status: 400 });
+  }
+}
