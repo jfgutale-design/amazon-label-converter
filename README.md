@@ -1,3 +1,4 @@
+
 # Amazon Label Converter
 
 Amazon Label Converter is a small Next.js app foundation for converting Amazon Seller Central PDF label sheets into thermal-printer-ready labels.
@@ -53,3 +54,7 @@ Current placeholder response:
   "message": "PDF received successfully. Processing engine coming next."
 }
 ```
+
+# amazon-label-converter
+label resizer
+
