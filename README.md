@@ -3,7 +3,7 @@
 
 Amazon Label Converter is a small Next.js app foundation for converting Amazon Seller Central PDF label sheets into thermal-printer-ready labels.
 
-This MVP includes a PDF upload form, label type selection, PDF-only validation, PDF page-count extraction, and ZIP download generation. The real Amazon label slicing engine is intentionally not included yet.
+This MVP includes a PDF upload form, label type selection, PDF-only validation, PDF page-count extraction, per-page PDF splitting, and ZIP download generation. The real Amazon label slicing engine is intentionally not included yet.
 
 ## Requirements
 
@@ -47,22 +47,14 @@ Accepts multipart form data with:
 - `file`: PDF file only
 - `labelType`: `shipping-4x6` or `fnsku-2x1`
 
-The API reads the uploaded PDF with `pdf-lib`, counts the pages, and returns an `application/zip` response generated with `jszip`.
+The API reads the uploaded PDF with `pdf-lib`, counts the pages, splits the PDF into one PDF file per source page, and returns an `application/zip` response generated with `jszip`.
 
-For each source PDF page, the ZIP contains one placeholder text file:
-
-```text
-page-1.txt
-page-2.txt
-page-3.txt
-```
-
-Each file contains:
+For each source PDF page, the ZIP contains one PDF file:
 
 ```text
-Amazon Label Converter placeholder output
-Label type: [selected label type]
-Source page: [page number]
+page-1.pdf
+page-2.pdf
+page-3.pdf
 ```
 
 Example error response for invalid input:

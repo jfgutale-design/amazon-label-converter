@@ -3,11 +3,6 @@ import JSZip from "jszip";
 
 const validLabelTypes = new Set(["shipping-4x6", "fnsku-2x1"]);
 
-const labelTypeNames: Record<string, string> = {
-  "shipping-4x6": "Shipping label 4x6",
-  "fnsku-2x1": "FNSKU label 2x1",
-};
-
 type ProcessPdfLabelInput = {
   file: FormDataEntryValue | null;
   labelType: FormDataEntryValue | null;
@@ -33,17 +28,16 @@ export async function processPdfLabel({
   const pdf = await PDFDocument.load(pdfBytes);
   const pageCount = pdf.getPageCount();
   const zip = new JSZip();
-  const labelTypeName = labelTypeNames[labelType];
 
   for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
-    zip.file(
-      `page-${pageNumber}.txt`,
-      [
-        "Amazon Label Converter placeholder output",
-        `Label type: ${labelTypeName}`,
-        `Source page: ${pageNumber}`,
-      ].join("\n"),
-    );
+    const singlePagePdf = await PDFDocument.create();
+    const [copiedPage] = await singlePagePdf.copyPages(pdf, [pageNumber - 1]);
+
+    singlePagePdf.addPage(copiedPage);
+
+    const singlePagePdfBytes = await singlePagePdf.save();
+
+    zip.file(`page-${pageNumber}.pdf`, singlePagePdfBytes);
   }
 
   const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
