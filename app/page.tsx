@@ -55,13 +55,30 @@ export default function Home() {
         method: "POST",
         body: formData,
       });
-      const data = (await response.json()) as { message?: string };
 
       if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
         throw new Error(data.message ?? "Unable to convert PDF.");
       }
 
-      setMessage(data.message ?? "PDF received successfully.");
+      const blob = await response.blob();
+      const pageCount = response.headers.get("X-Page-Count");
+      const fileName = getDownloadFileName(response);
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+
+      setMessage(
+        pageCount
+          ? `ZIP downloaded successfully. Pages processed: ${pageCount}.`
+          : "ZIP downloaded successfully.",
+      );
     } catch (error) {
       setIsError(true);
       setMessage(error instanceof Error ? error.message : "Unable to convert PDF.");
@@ -141,4 +158,11 @@ export default function Home() {
 
 function isPdf(file: File) {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
+
+function getDownloadFileName(response: Response) {
+  const contentDisposition = response.headers.get("Content-Disposition");
+  const match = contentDisposition?.match(/filename="([^"]+)"/);
+
+  return match?.[1] ?? "amazon-label-converter-output.zip";
 }
