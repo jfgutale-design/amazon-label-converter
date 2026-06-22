@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 
 const labelTypes = [
   {
@@ -19,12 +19,15 @@ const labelTypes = [
   },
 ];
 
+const devOnlySpinnerTestDelayMs = 1500;
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
-  const [labelType, setLabelType] = useState(labelTypes[0].value);
+  const [labelType, setLabelType] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   function handleFileChange(nextFile: File | null) {
     setMessage("");
@@ -38,21 +41,44 @@ export default function Home() {
     if (!isPdf(nextFile)) {
       setFile(null);
       setIsError(true);
-      setMessage("Please upload a PDF file.");
+      setMessage("Please upload a valid PDF file.");
       return;
     }
 
     setFile(nextFile);
   }
 
+  function handleLabelTypeChange(nextLabelType: string) {
+    setMessage("");
+    setIsError(false);
+    setLabelType(nextLabelType);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     setMessage("");
     setIsError(false);
 
     if (!file) {
       setIsError(true);
-      setMessage("Please choose a PDF before converting.");
+      setMessage("Please upload a PDF file first.");
+      return;
+    }
+
+    if (!labelType) {
+      setIsError(true);
+      setMessage("Please choose what you are trying to print.");
+      return;
+    }
+
+    if (!isPdf(file)) {
+      setIsError(true);
+      setMessage("Please upload a valid PDF file.");
       return;
     }
 
@@ -60,24 +86,29 @@ export default function Home() {
     formData.append("file", file);
     formData.append("labelType", labelType);
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+    setMessage("Converting your label PDF...");
 
     try {
+      await waitForDevOnlySpinnerTestDelay();
+
       const response = await fetch("/api/convert", {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { message?: string };
-        throw new Error(data.message ?? "Unable to convert PDF.");
+        throw new Error("Conversion failed.");
       }
 
       const blob = await response.blob();
-      const pageCount = response.headers.get("X-Page-Count");
       const fileName = getDownloadFileName(response);
       const downloadUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
+
+      setMessage("Conversion complete. Your download will start now.");
+      await wait(500);
 
       link.href = downloadUrl;
       link.download = fileName;
@@ -86,15 +117,12 @@ export default function Home() {
       link.remove();
       URL.revokeObjectURL(downloadUrl);
 
-      setMessage(
-        pageCount
-          ? `File downloaded successfully. Pages processed: ${pageCount}.`
-          : "File downloaded successfully.",
-      );
-    } catch (error) {
+      setMessage("");
+    } catch {
       setIsError(true);
-      setMessage(error instanceof Error ? error.message : "Unable to convert PDF.");
+      setMessage("Something went wrong while converting your PDF. Please try again.");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -120,6 +148,7 @@ export default function Home() {
                   name="file"
                   type="file"
                   accept="application/pdf,.pdf"
+                  disabled={isSubmitting}
                   onChange={(event) =>
                     handleFileChange(event.currentTarget.files?.[0] ?? null)
                   }
@@ -141,8 +170,9 @@ export default function Home() {
                   <button
                     aria-pressed={isSelected}
                     className={`labelCard ${isSelected ? "labelCardActive" : ""}`}
+                    disabled={isSubmitting}
                     key={type.value}
-                    onClick={() => setLabelType(type.value)}
+                    onClick={() => handleLabelTypeChange(type.value)}
                     type="button"
                   >
                     <span className="labelCardTitle">{type.title}</span>
@@ -158,7 +188,14 @@ export default function Home() {
           </div>
 
           <button className="button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Converting..." : "Convert"}
+            {isSubmitting ? (
+              <span className="buttonLoading">
+                <span aria-hidden="true" className="spinner" />
+                Converting your label PDF...
+              </span>
+            ) : (
+              "Convert"
+            )}
           </button>
 
           {message ? (
@@ -186,4 +223,17 @@ function getDownloadFileName(response: Response) {
   const match = contentDisposition?.match(/filename="([^"]+)"/);
 
   return match?.[1] ?? "amazon-label-converter-output.zip";
+}
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
+async function waitForDevOnlySpinnerTestDelay() {
+  // Temporary dev-only delay for visibly testing the spinner and disabled state.
+  if (process.env.NODE_ENV === "development") {
+    await wait(devOnlySpinnerTestDelayMs);
+  }
 }

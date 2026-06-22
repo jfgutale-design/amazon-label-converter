@@ -135,7 +135,7 @@ button:disabled {
   border-radius: 8px;
 }
 
-.labelCard:hover {
+.labelCard:hover:not(:disabled) {
   border-color: var(--accent);
 }
 
@@ -180,6 +180,22 @@ button:disabled {
   background: var(--accent-hover);
 }
 
+.buttonLoading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgb(255 255 255 / 42%);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 .message {
   margin: 0;
   line-height: 1.5;
@@ -196,5 +212,11 @@ button:disabled {
 @media (max-width: 640px) {
   .labelCards {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
