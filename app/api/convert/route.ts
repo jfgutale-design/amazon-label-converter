@@ -9,10 +9,10 @@ export async function POST(request: Request) {
 
     const result = await processPdfLabel({ file, labelType });
 
-    return new NextResponse(result.zipBuffer, {
+    return new NextResponse(result.fileBuffer, {
       headers: {
         "Content-Disposition": `attachment; filename="${result.fileName}"`,
-        "Content-Type": "application/zip",
+        "Content-Type": result.contentType,
         "X-Page-Count": result.pageCount.toString(),
       },
     });

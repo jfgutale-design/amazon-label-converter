@@ -24,8 +24,7 @@ body {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
 }
 
@@ -106,14 +105,65 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-.select {
-  width: 100%;
-  min-height: 48px;
-  padding: 0 12px;
+.labelPicker {
+  display: grid;
+  gap: 18px;
+}
+
+.labelPicker h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.labelCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.labelCard {
+  display: grid;
+  gap: 10px;
+  min-height: 210px;
+  padding: 22px;
   color: var(--foreground);
+  text-align: left;
   background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+}
+
+.labelCard:hover {
+  border-color: var(--accent);
+}
+
+.labelCardActive {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(37 107 95 / 16%);
+}
+
+.labelCardTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.labelCardSize {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.labelCardDescription {
+  color: var(--foreground);
+  line-height: 1.45;
+}
+
+.labelCardSubtext {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 .button {
@@ -141,4 +191,10 @@ button:disabled {
 
 .messageSuccess {
   color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .labelCards {
+    grid-template-columns: 1fr;
+  }
 }

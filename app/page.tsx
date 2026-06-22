@@ -3,8 +3,20 @@
 import { FormEvent, useState } from "react";
 
 const labelTypes = [
-  { value: "shipping-4x6", label: "Shipping label 4x6" },
-  { value: "fnsku-2x1", label: "FNSKU label 2x1" },
+  {
+    value: "fnsku-2x1",
+    title: "Product labels",
+    size: '2" × 1"',
+    description: "Small barcode labels to stick on each product.",
+    subtext: "Use this for FNSKU labels.",
+  },
+  {
+    value: "shipping-4x6",
+    title: "Shipping labels",
+    size: '4" × 6"',
+    description: "Large labels to stick on cartons or boxes.",
+    subtext: "Use this for Amazon shipment labels.",
+  },
 ];
 
 export default function Home() {
@@ -76,8 +88,8 @@ export default function Home() {
 
       setMessage(
         pageCount
-          ? `ZIP downloaded successfully. Pages processed: ${pageCount}.`
-          : "ZIP downloaded successfully.",
+          ? `File downloaded successfully. Pages processed: ${pageCount}.`
+          : "File downloaded successfully.",
       );
     } catch (error) {
       setIsError(true);
@@ -119,21 +131,30 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="label-type">Label type</label>
-            <select
-              className="select"
-              id="label-type"
-              name="labelType"
-              value={labelType}
-              onChange={(event) => setLabelType(event.currentTarget.value)}
-            >
-              {labelTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
+          <div className="labelPicker" aria-labelledby="label-picker-title">
+            <h2 id="label-picker-title">What are you trying to print today?</h2>
+            <div className="labelCards">
+              {labelTypes.map((type) => {
+                const isSelected = labelType === type.value;
+
+                return (
+                  <button
+                    aria-pressed={isSelected}
+                    className={`labelCard ${isSelected ? "labelCardActive" : ""}`}
+                    key={type.value}
+                    onClick={() => setLabelType(type.value)}
+                    type="button"
+                  >
+                    <span className="labelCardTitle">{type.title}</span>
+                    <span className="labelCardSize">{type.size}</span>
+                    <span className="labelCardDescription">
+                      {type.description}
+                    </span>
+                    <span className="labelCardSubtext">{type.subtext}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <button className="button" type="submit" disabled={isSubmitting}>
