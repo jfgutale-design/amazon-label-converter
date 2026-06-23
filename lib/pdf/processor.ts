@@ -1,4 +1,9 @@
 import { PDFDocument } from "pdf-lib";
+import {
+  defaultProductLabelTemplateId,
+  getProductLabelTemplate,
+} from "./product-label-templates";
+import type { ProductLabelTemplate } from "./product-label-templates";
 
 const validLabelTypes = new Set(["shipping-4x6", "fnsku-2x1"]);
 
@@ -7,18 +12,10 @@ const thermal4x6Page = {
   height: 432,
 };
 
-const fnsku27UpTemplate = {
-  columns: 3,
-  rows: 9,
-  labelWidthMm: 63.5,
-  labelHeightMm: 29.6,
-  columnPitchMm: 66,
-  rowPitchMm: 29.6,
-};
-
 type ProcessPdfLabelInput = {
   file: FormDataEntryValue | null;
   labelType: FormDataEntryValue | null;
+  productTemplateId?: FormDataEntryValue | null;
 };
 
 type CropRegion = {
@@ -31,6 +28,7 @@ type CropRegion = {
 export async function processPdfLabel({
   file,
   labelType,
+  productTemplateId,
 }: ProcessPdfLabelInput) {
   if (!(file instanceof File)) {
     throw new Error("Please upload a PDF file.");
@@ -49,8 +47,10 @@ export async function processPdfLabel({
   const pageCount = pdf.getPageCount();
 
   if (labelType === "fnsku-2x1") {
+    const template = getSelectedProductLabelTemplate(productTemplateId);
+
     return {
-      fileBuffer: await createProductLabelsPrintReadyPdf(pdf),
+      fileBuffer: await createProductLabelsPrintReadyPdf(pdf, template),
       fileName: "product-labels-print-ready.pdf",
       contentType: "application/pdf",
       pageCount,
@@ -67,6 +67,22 @@ export async function processPdfLabel({
 
 function isPdf(file: File) {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
+
+function getSelectedProductLabelTemplate(
+  productTemplateId: FormDataEntryValue | null | undefined,
+) {
+  const templateId =
+    typeof productTemplateId === "string"
+      ? productTemplateId
+      : defaultProductLabelTemplateId;
+  const template = getProductLabelTemplate(templateId);
+
+  if (!template) {
+    throw new Error("Please choose a valid product label template.");
+  }
+
+  return template;
 }
 
 async function createShippingLabelsPrintReadyPdf(pdf: PDFDocument) {
@@ -100,13 +116,20 @@ async function createShippingLabelsPrintReadyPdf(pdf: PDFDocument) {
   return toArrayBuffer(await printReadyPdf.save());
 }
 
-async function createProductLabelsPrintReadyPdf(pdf: PDFDocument) {
+async function createProductLabelsPrintReadyPdf(
+  pdf: PDFDocument,
+  template: ProductLabelTemplate,
+) {
   const printReadyPdf = await PDFDocument.create();
 
   for (let pageIndex = 0; pageIndex < pdf.getPageCount(); pageIndex += 1) {
     const page = pdf.getPage(pageIndex);
     const { width: pageWidth, height: pageHeight } = page.getSize();
-    const cropRegions = getFnsku27UpCropRegions(pageWidth, pageHeight);
+    const cropRegions = getProductLabelCropRegions(
+      template,
+      pageWidth,
+      pageHeight,
+    );
 
     for (const cropRegion of cropRegions) {
       const labelPdf = await createCroppedFnskuLabelPdf(
@@ -142,21 +165,23 @@ async function createCroppedFnskuLabelPdf(
   return labelPdf;
 }
 
-function getFnsku27UpCropRegions(pageWidth: number, pageHeight: number) {
-  const labelWidth = mmToPt(fnsku27UpTemplate.labelWidthMm);
-  const labelHeight = mmToPt(fnsku27UpTemplate.labelHeightMm);
-  const columnPitch = mmToPt(fnsku27UpTemplate.columnPitchMm);
-  const rowPitch = mmToPt(fnsku27UpTemplate.rowPitchMm);
-  const gridWidth =
-    labelWidth + columnPitch * (fnsku27UpTemplate.columns - 1);
-  const gridHeight =
-    labelHeight + rowPitch * (fnsku27UpTemplate.rows - 1);
+function getProductLabelCropRegions(
+  template: ProductLabelTemplate,
+  pageWidth: number,
+  pageHeight: number,
+) {
+  const labelWidth = mmToPt(template.labelWidthMm);
+  const labelHeight = mmToPt(template.labelHeightMm);
+  const columnPitch = mmToPt(template.columnPitchMm);
+  const rowPitch = mmToPt(template.rowPitchMm);
+  const gridWidth = labelWidth + columnPitch * (template.columns - 1);
+  const gridHeight = labelHeight + rowPitch * (template.rows - 1);
   const leftMargin = (pageWidth - gridWidth) / 2;
   const topMargin = (pageHeight - gridHeight) / 2;
   const cropRegions: CropRegion[] = [];
 
-  for (let row = 0; row < fnsku27UpTemplate.rows; row += 1) {
-    for (let column = 0; column < fnsku27UpTemplate.columns; column += 1) {
+  for (let row = 0; row < template.rows; row += 1) {
+    for (let column = 0; column < template.columns; column += 1) {
       cropRegions.push({
         x: leftMargin + column * columnPitch,
         y: pageHeight - topMargin - labelHeight - row * rowPitch,

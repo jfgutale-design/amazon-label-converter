@@ -6,8 +6,9 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
     const labelType = formData.get("labelType");
+    const productTemplateId = formData.get("productTemplateId");
 
-    const result = await processPdfLabel({ file, labelType });
+    const result = await processPdfLabel({ file, labelType, productTemplateId });
 
     return new NextResponse(result.fileBuffer, {
       headers: {

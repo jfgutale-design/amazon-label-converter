@@ -1,6 +1,10 @@
 "use client";
 
 import { FormEvent, useRef, useState } from "react";
+import {
+  defaultProductLabelTemplateId,
+  productLabelTemplates,
+} from "@/lib/pdf/product-label-templates";
 
 const labelTypes = [
   {
@@ -24,6 +28,9 @@ const devOnlySpinnerTestDelayMs = 1500;
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [labelType, setLabelType] = useState("");
+  const [productTemplateId, setProductTemplateId] = useState<string>(
+    defaultProductLabelTemplateId,
+  );
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,6 +92,10 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("labelType", labelType);
+
+    if (labelType === "fnsku-2x1") {
+      formData.append("productTemplateId", productTemplateId);
+    }
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
@@ -186,6 +197,30 @@ export default function Home() {
               })}
             </div>
           </div>
+
+          {labelType === "fnsku-2x1" ? (
+            <div className="field">
+              <label htmlFor="product-template">Product label template</label>
+              <select
+                className="select"
+                disabled={isSubmitting}
+                id="product-template"
+                name="productTemplateId"
+                onChange={(event) => {
+                  setMessage("");
+                  setIsError(false);
+                  setProductTemplateId(event.currentTarget.value);
+                }}
+                value={productTemplateId}
+              >
+                {productLabelTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} - {template.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           <button className="button" type="submit" disabled={isSubmitting}>
             {isSubmitting ? (

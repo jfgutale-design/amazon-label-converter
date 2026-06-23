@@ -24,7 +24,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -103,6 +104,16 @@ button:disabled {
   margin: 10px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  color: var(--foreground);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
 .labelPicker {
