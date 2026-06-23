@@ -4,6 +4,9 @@ export type ProductLabelTemplate = {
   description: string;
   columns: number;
   rows: number;
+  pageWidthPt: number;
+  pageHeightPt: number;
+  pageSizeTolerancePt: number;
   labelWidthMm: number;
   labelHeightMm: number;
   columnPitchMm: number;
@@ -17,6 +20,9 @@ export const productLabelTemplates = [
     description: "3 columns x 9 rows, 63.5mm x 29.6mm labels",
     columns: 3,
     rows: 9,
+    pageWidthPt: 595.27,
+    pageHeightPt: 841.68,
+    pageSizeTolerancePt: 5,
     labelWidthMm: 63.5,
     labelHeightMm: 29.6,
     columnPitchMm: 66,

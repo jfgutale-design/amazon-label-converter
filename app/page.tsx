@@ -24,6 +24,8 @@ const labelTypes = [
 ];
 
 const devOnlySpinnerTestDelayMs = 1500;
+const productTemplateMismatchMessage =
+  "This PDF does not appear to match the selected product label template.";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -34,6 +36,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isSubmittingRef = useRef(false);
 
   function handleFileChange(nextFile: File | null) {
@@ -49,6 +52,11 @@ export default function Home() {
       setFile(null);
       setIsError(true);
       setMessage("Please upload a valid PDF file.");
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       return;
     }
 
@@ -110,6 +118,12 @@ export default function Home() {
       });
 
       if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
+
+        if (data.message === productTemplateMismatchMessage) {
+          throw new Error(productTemplateMismatchMessage);
+        }
+
         throw new Error("Conversion failed.");
       }
 
@@ -129,9 +143,13 @@ export default function Home() {
       URL.revokeObjectURL(downloadUrl);
 
       setMessage("");
-    } catch {
+    } catch (error) {
       setIsError(true);
-      setMessage("Something went wrong while converting your PDF. Please try again.");
+      setMessage(
+        error instanceof Error && error.message === productTemplateMismatchMessage
+          ? productTemplateMismatchMessage
+          : "Something went wrong while converting your PDF. Please try again.",
+      );
     } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -157,6 +175,7 @@ export default function Home() {
                 <input
                   id="pdf-file"
                   name="file"
+                  ref={fileInputRef}
                   type="file"
                   accept="application/pdf,.pdf"
                   disabled={isSubmitting}

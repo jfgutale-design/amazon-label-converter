@@ -12,6 +12,9 @@ const thermal4x6Page = {
   height: 432,
 };
 
+const productTemplateMismatchMessage =
+  "This PDF does not appear to match the selected product label template.";
+
 type ProcessPdfLabelInput = {
   file: FormDataEntryValue | null;
   labelType: FormDataEntryValue | null;
@@ -49,6 +52,8 @@ export async function processPdfLabel({
   if (labelType === "fnsku-2x1") {
     const template = getSelectedProductLabelTemplate(productTemplateId);
 
+    validateProductTemplatePageSize(template, pdf);
+
     return {
       fileBuffer: await createProductLabelsPrintReadyPdf(pdf, template),
       fileName: "product-labels-print-ready.pdf",
@@ -83,6 +88,24 @@ function getSelectedProductLabelTemplate(
   }
 
   return template;
+}
+
+function validateProductTemplatePageSize(
+  template: ProductLabelTemplate,
+  pdf: PDFDocument,
+) {
+  for (let pageIndex = 0; pageIndex < pdf.getPageCount(); pageIndex += 1) {
+    const page = pdf.getPage(pageIndex);
+    const { width, height } = page.getSize();
+    const widthMatches =
+      Math.abs(width - template.pageWidthPt) <= template.pageSizeTolerancePt;
+    const heightMatches =
+      Math.abs(height - template.pageHeightPt) <= template.pageSizeTolerancePt;
+
+    if (!widthMatches || !heightMatches) {
+      throw new Error(productTemplateMismatchMessage);
+    }
+  }
 }
 
 async function createShippingLabelsPrintReadyPdf(pdf: PDFDocument) {
